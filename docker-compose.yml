@@ -1,0 +1,61 @@
+services:
+  bioafis-app:
+    build: .
+    image: bioafis:latest
+    restart: unless-stopped
+    depends_on:
+      bioafis-db:
+        condition: service_healthy
+    environment:
+      DB_HOST: bioafis-db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-bioafis}
+      DB_USER: ${DB_USER:-bioafis}
+      DB_PASSWORD: ${DB_PASSWORD}
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      TEMPLATE_ENCRYPTION_KEY: ${TEMPLATE_ENCRYPTION_KEY}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    ports:
+      - "8021:8021"
+    networks:
+      - bioafis-net
+
+  bioafis-db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-bioafis}
+      MYSQL_USER: ${DB_USER:-bioafis}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
+    volumes:
+      - bioafis_db_data:/var/lib/mysql
+    networks:
+      - bioafis-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # CRITICAL: DB port NOT exposed externally
+
+  bioafis-nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - /etc/ssl/bioafis:/etc/ssl/bioafis:ro
+    depends_on:
+      - bioafis-app
+    networks:
+      - bioafis-net
+
+volumes:
+  bioafis_db_data:
+
+networks:
+  bioafis-net:
+    driver: bridge

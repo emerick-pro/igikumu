@@ -1,0 +1,11 @@
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/bioafis?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: bioafis
+    password: bioafis
+  jpa:
+    show-sql: true
+
+logging:
+  level:
+    com.airb.bioafis: DEBUG
